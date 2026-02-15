@@ -1,0 +1,115 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Aortic Dissection Extractor Contract v0.1",
+  "description": "Extractor output schema for clinical-verifiable-gates. No chain-of-thought fields allowed. UNKNOWN-by-default. Evidence anchors required when not UNKNOWN.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["meta", "instability", "ad_gate", "audit"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dialogue_id", "last_turn_id", "schema_version", "guideline_ref", "taxonomy_version"],
+      "properties": {
+        "dialogue_id": { "type": "string", "minLength": 1 },
+        "last_turn_id": { "type": "integer", "minimum": 0 },
+        "schema_version": { "type": "string", "minLength": 1 },
+        "guideline_ref": { "type": "string", "minLength": 1 },
+        "taxonomy_version": { "type": "string", "minLength": 1 }
+      }
+    },
+
+    "instability": {
+      "type": "object",
+      "description": "Instability triggers. PRESENT or POSSIBLE => bypass (ABSTAIN_ESCALATE).",
+      "additionalProperties": false,
+      "required": [
+        "syncope_or_collapse",
+        "severe_respiratory_distress",
+        "cyanosis_or_low_o2",
+        "hypotension_or_shock_signs",
+        "altered_mental_status",
+        "acute_focal_neuro_deficit",
+        "severe_pain_at_rest_with_diaphoresis_or_pallor"
+      ],
+      "properties": {
+        "syncope_or_collapse": { "$ref": "#/definitions/InstabilitySlot" },
+        "severe_respiratory_distress": { "$ref": "#/definitions/InstabilitySlot" },
+        "cyanosis_or_low_o2": { "$ref": "#/definitions/InstabilitySlot" },
+        "hypotension_or_shock_signs": { "$ref": "#/definitions/InstabilitySlot" },
+        "altered_mental_status": { "$ref": "#/definitions/InstabilitySlot" },
+        "acute_focal_neuro_deficit": { "$ref": "#/definitions/InstabilitySlot" },
+        "severe_pain_at_rest_with_diaphoresis_or_pallor": { "$ref": "#/definitions/InstabilitySlot" }
+      }
+    },
+
+    "ad_gate": {
+      "type": "object",
+      "description": "AD gating slots v0.1: C1/C2/C4 only.",
+      "additionalProperties": false,
+      "required": ["C1_onset_maximal_at_start", "C2_back_interscapular_radiation", "C4_aortic_high_risk_history_any"],
+      "properties": {
+        "C1_onset_maximal_at_start": { "$ref": "#/definitions/GatingSlot" },
+        "C2_back_interscapular_radiation": { "$ref": "#/definitions/GatingSlot" },
+        "C4_aortic_high_risk_history_any": { "$ref": "#/definitions/GatingSlot" }
+      }
+    },
+
+    "audit": {
+      "type": "object",
+      "description": "Audit slots (logged only; not required for PASS in v0.1).",
+      "additionalProperties": false,
+      "required": ["A1_focal_neuro_deficit"],
+      "properties": {
+        "A1_focal_neuro_deficit": { "$ref": "#/definitions/GatingSlot" }
+      }
+    }
+  },
+
+  "definitions": {
+    "Evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_turn_id", "quote_text", "confidence"],
+      "properties": {
+        "source_turn_id": { "type": "integer", "minimum": 0 },
+        "quote_text": { "type": "string", "minLength": 1 },
+        "confidence": { "type": "string", "enum": ["high", "medium", "low"] }
+      }
+    },
+
+    "GatingSlot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "evidence"],
+      "properties": {
+        "value": { "type": "string", "enum": ["YES", "NO", "UNKNOWN"] },
+        "evidence": { "anyOf": [{ "$ref": "#/definitions/Evidence" }, { "type": "null" }] }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "value": { "const": "UNKNOWN" } }, "required": ["value"] },
+          "then": { "properties": { "evidence": { "type": "null" } }, "required": ["evidence"] },
+          "else": { "properties": { "evidence": { "$ref": "#/definitions/Evidence" } }, "required": ["evidence"] }
+        }
+      ]
+    },
+
+    "InstabilitySlot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "evidence"],
+      "properties": {
+        "value": { "type": "string", "enum": ["PRESENT", "ABSENT", "POSSIBLE", "UNKNOWN"] },
+        "evidence": { "anyOf": [{ "$ref": "#/definitions/Evidence" }, { "type": "null" }] }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "value": { "const": "UNKNOWN" } }, "required": ["value"] },
+          "then": { "properties": { "evidence": { "type": "null" } }, "required": ["evidence"] },
+          "else": { "properties": { "evidence": { "$ref": "#/definitions/Evidence" } }, "required": ["evidence"] }
+        }
+      ]
+    }
+  }
+}
