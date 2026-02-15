@@ -72,3 +72,14 @@ Tagline: “Deterministic verifier kernel for medical RLVR: extractor contract, 
 **Decision:** AD gating slots = C1/C2/C4. C3 is not gating; kept as audit slot A1 (focal neuro deficit). Syncope/near-syncope remains only in instability bypass.  
 **Why / trade-off:** Removes duplication; aligns with clinical bypass logic.  
 **Revisit trigger:** If we expand to additional gates or revise AD slot set.
+
+
+## D-014 — Instability trigger encoding
+**Decision:** Instability triggers use value enum: PRESENT / ABSENT / POSSIBLE / UNKNOWN.  
+**Why / trade-off:** “possible present” must deterministically trigger bypass; don’t infer it from confidence.  
+**Revisit trigger:** If we standardize probabilistic thresholds for POSSIBLE.
+
+## D-015 — Contract schema location + naming
+**Decision:** Canon schema file: `core/schemas/ad_extractor_contract_v0.1.schema.json`.  
+**Why / trade-off:** Treat contract as core API; stable path for tooling and CI.  
+**Revisit trigger:** If we split into multiple gate schemas or introduce a top-level registry.
