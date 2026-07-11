@@ -279,11 +279,12 @@
         "decision": "ABSTAIN",
         "abstain_mode": "ASK_ONCE",
         "reason_codes": [
+          "RC_INSTABILITY_SLOT_MISSING",
           "RC_AD_CRITICAL_SLOT_MISSING"
         ]
       },
-      "rationale": "Critical information remains UNKNOWN; UNKNOWN must not be treated as NO.",
-      "source_basis": "docs/examples/ad_example_silence_001.md; docs/memo_v1.4.md §6.3 and §8"
+      "rationale": "Both instability and critical AD information remain UNKNOWN. UNKNOWN must not be treated as ABSENT or NO, so the verifier returns both structural missingness reason codes in D-017 order.",
+      "source_basis": "docs/examples/ad_example_silence_001.md; docs/decision_log.md D-017; docs/memo_v1.4.md §6.3 and §8"
     },
     {
       "id": "pass_all_critical_no_001",
