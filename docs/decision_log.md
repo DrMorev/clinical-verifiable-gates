@@ -83,3 +83,11 @@ Tagline: “Deterministic verifier kernel for medical RLVR: extractor contract, 
 **Decision:** Canon schema file: `core/schemas/ad_extractor_contract_v0.1.schema.json`.  
 **Why / trade-off:** Treat contract as core API; stable path for tooling and CI.  
 **Revisit trigger:** If we split into multiple gate schemas or introduce a top-level registry.
+
+## D-016 — Canonical CVG identity supersedes RLVR framing
+
+**Decision:** Clinical Verifiable Gates is an open-source reference implementation of deterministic runtime gates for safety-sensitive clinical AI outputs. CVG is a deterministic runtime qualification layer, not an RLVR or RLHF implementation, reward model, or training-time project. Med-RLVR and medical verifiable-reward work remain adjacent prior art only. Deterministic final adjudication remains an active architectural requirement; this requirement does not imply that executable adjudication is present in the current repository. This decision supersedes the identity and tagline framing in D-001 without altering any clinical decision or reason-code semantics.
+
+**Why / trade-off:** Separates CVG's runtime qualification identity from adjacent reward-training work and keeps public claims aligned with observed executable artifacts.
+
+**Revisit trigger:** If the project identity or implementation boundary changes through an explicitly approved decision.

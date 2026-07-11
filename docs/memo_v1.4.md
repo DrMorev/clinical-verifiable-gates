@@ -1,3 +1,5 @@
+> **Current status notice:** This is a historical design memo. Its RLVR and reward-use framing no longer defines the project identity; Med-RLVR remains adjacent prior work only. Clinical Verifiable Gates is an open-source reference implementation of deterministic runtime gates for safety-sensitive clinical AI outputs. Descriptions of verifier behavior, evidence matching, the Silence Gate, evaluation, and other runtime capabilities below are intended or planned architecture unless supported by executable repository artifacts. The current repository contains a contract schema, interface and policy scaffolding, design documentation, and three non-executable Markdown examples; it does not yet contain an executable verifier, tests, CI, or a canonical run command.
+
 Decision Memo v1.4 (Patched Canon) — Clinical Verifiable Gates (v0.1)
 
 Date: Feb 5, 2026
