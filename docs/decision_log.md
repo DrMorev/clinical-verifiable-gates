@@ -91,3 +91,24 @@ Tagline: “Deterministic verifier kernel for medical RLVR: extractor contract, 
 **Why / trade-off:** Separates CVG's runtime qualification identity from adjacent reward-training work and keeps public claims aligned with observed executable artifacts.
 
 **Revisit trigger:** If the project identity or implementation boundary changes through an explicitly approved decision.
+
+## D-017 — Instability UNKNOWN handling
+
+**Decision:**
+
+- PRESENT or POSSIBLE remains instability bypass: ABSTAIN, ESCALATE, `RC_INSTABILITY_BYPASS`.
+- If no instability bypass applies and any instability slot is UNKNOWN, the contract cannot PASS.
+- That state produces ABSTAIN, ASK_ONCE, `RC_INSTABILITY_SLOT_MISSING`.
+- Critical AD YES retains escalation precedence over missing-information handling.
+- If both instability and critical AD information are missing after escalation checks, ordered reason codes are:
+  1. `RC_INSTABILITY_SLOT_MISSING`
+  2. `RC_AD_CRITICAL_SLOT_MISSING`
+- PASS requires every instability slot to be ABSENT and every critical AD slot C1/C2/C4 to be grounded NO.
+
+**Why:**
+
+- UNKNOWN must not be treated as ABSENT.
+- The current schema explicitly permits instability UNKNOWN.
+- Deterministic total adjudication requires an explicit non-PASS result for this state.
+
+**Revisit trigger:** If the instability contract, clarification policy, or slot taxonomy changes.

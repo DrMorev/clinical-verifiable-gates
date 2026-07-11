@@ -146,6 +146,7 @@ A) Contract (usually BLOCK)
 
 B) Safety
 	•	RC_INSTABILITY_BYPASS → ABSTAIN (no questions)
+	•	RC_INSTABILITY_SLOT_MISSING → ABSTAIN_ASK_ONCE
 	•	RC_AD_CRITICAL_SLOT_MISSING → ABSTAIN_ASK_ONCE
 	•	RC_AD_RED_FLAG_PRESENT → ABSTAIN + escalate (no questions)
 	•	RC_CRITICAL_CONTRADICTION → ABSTAIN_ASK_ONCE
@@ -157,7 +158,7 @@ C) Evidence / Silence
 	•	RC_EVIDENCE_WEAK → ABSTAIN_ASK_ONCE (log; known limitation v0.1)
 
 PASS rule (single line)
-PASS only if: no instability triggers, no critical YES, no critical contradictions, no UNKNOWN in critical gating slots (C1/C2/C4), and evidence policy does not raise NOT_FOUND/HALLUCINATED.
+PASS only if: all instability slots are ABSENT, no critical AD slot is YES, no critical contradiction exists, no critical AD slot is UNKNOWN, and no evidence-policy failure is raised.
 
 9) Evaluation suite v0.1
 	•	Golden (10): clear positives/negatives + expected JSON + expected decision

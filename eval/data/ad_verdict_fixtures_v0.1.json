@@ -279,11 +279,12 @@
         "decision": "ABSTAIN",
         "abstain_mode": "ASK_ONCE",
         "reason_codes": [
+          "RC_INSTABILITY_SLOT_MISSING",
           "RC_AD_CRITICAL_SLOT_MISSING"
         ]
       },
-      "rationale": "Critical information remains UNKNOWN; UNKNOWN must not be treated as NO.",
-      "source_basis": "docs/examples/ad_example_silence_001.md; docs/memo_v1.4.md §6.3 and §8"
+      "rationale": "Both instability and critical AD information remain UNKNOWN. UNKNOWN must not be treated as ABSENT or NO, so the verifier returns both structural missingness reason codes in D-017 order.",
+      "source_basis": "docs/examples/ad_example_silence_001.md; docs/decision_log.md D-017; docs/memo_v1.4.md §6.3 and §8"
     },
     {
       "id": "pass_all_critical_no_001",
@@ -778,6 +779,128 @@
       },
       "rationale": "This synthetic Silence-set oracle labels the dialogue as containing no support for C1, yet the extractor assigns the non-UNKNOWN critical value YES. D-009 defines that known Silence violation as a hard failure. This verdict does not assume that failure to find an exact quote, by itself, always proves hallucination.",
       "source_basis": "docs/decision_log.md D-009; docs/memo_v1.4.md §7.3 and §8"
+    },
+    {
+      "id": "instability_unknown_001",
+      "category": "instability_missing",
+      "dialogue": [
+        {
+          "turn_id": 0,
+          "text": "I can breathe normally and speak in full sentences. My lips are not blue, and my oxygen reading is normal. My blood pressure is normal, and I am not cold or clammy. I am alert and thinking clearly. I have no new weakness, numbness, or speech trouble. The pain is not severe at rest, and I am not sweaty or pale."
+        },
+        {
+          "turn_id": 1,
+          "text": "The pain built up gradually rather than being maximal at the start. It does not spread to my back or between my shoulder blades. I have none of the listed aortic high-risk history."
+        }
+      ],
+      "extractor_output": {
+        "meta": {
+          "dialogue_id": "instability_unknown_001",
+          "last_turn_id": 1,
+          "schema_version": "v0.1.0",
+          "guideline_ref": "AHA_2014_ChestPain_v1",
+          "taxonomy_version": "v0.1"
+        },
+        "instability": {
+          "syncope_or_collapse": {
+            "value": "UNKNOWN",
+            "evidence": null
+          },
+          "severe_respiratory_distress": {
+            "value": "ABSENT",
+            "evidence": {
+              "source_turn_id": 0,
+              "quote_text": "I can breathe normally and speak in full sentences.",
+              "confidence": "high"
+            }
+          },
+          "cyanosis_or_low_o2": {
+            "value": "ABSENT",
+            "evidence": {
+              "source_turn_id": 0,
+              "quote_text": "My lips are not blue, and my oxygen reading is normal.",
+              "confidence": "high"
+            }
+          },
+          "hypotension_or_shock_signs": {
+            "value": "ABSENT",
+            "evidence": {
+              "source_turn_id": 0,
+              "quote_text": "My blood pressure is normal, and I am not cold or clammy.",
+              "confidence": "high"
+            }
+          },
+          "altered_mental_status": {
+            "value": "ABSENT",
+            "evidence": {
+              "source_turn_id": 0,
+              "quote_text": "I am alert and thinking clearly.",
+              "confidence": "high"
+            }
+          },
+          "acute_focal_neuro_deficit": {
+            "value": "ABSENT",
+            "evidence": {
+              "source_turn_id": 0,
+              "quote_text": "I have no new weakness, numbness, or speech trouble.",
+              "confidence": "high"
+            }
+          },
+          "severe_pain_at_rest_with_diaphoresis_or_pallor": {
+            "value": "ABSENT",
+            "evidence": {
+              "source_turn_id": 0,
+              "quote_text": "The pain is not severe at rest, and I am not sweaty or pale.",
+              "confidence": "high"
+            }
+          }
+        },
+        "ad_gate": {
+          "C1_onset_maximal_at_start": {
+            "value": "NO",
+            "evidence": {
+              "source_turn_id": 1,
+              "quote_text": "The pain built up gradually rather than being maximal at the start.",
+              "confidence": "high"
+            }
+          },
+          "C2_back_interscapular_radiation": {
+            "value": "NO",
+            "evidence": {
+              "source_turn_id": 1,
+              "quote_text": "It does not spread to my back or between my shoulder blades.",
+              "confidence": "high"
+            }
+          },
+          "C4_aortic_high_risk_history_any": {
+            "value": "NO",
+            "evidence": {
+              "source_turn_id": 1,
+              "quote_text": "I have none of the listed aortic high-risk history.",
+              "confidence": "high"
+            }
+          }
+        },
+        "audit": {
+          "A1_focal_neuro_deficit": {
+            "value": "NO",
+            "evidence": {
+              "source_turn_id": 0,
+              "quote_text": "I have no new weakness, numbness, or speech trouble.",
+              "confidence": "high"
+            }
+          }
+        }
+      },
+      "expected": {
+        "decision": "ABSTAIN",
+        "abstain_mode": "ASK_ONCE",
+        "reason_codes": [
+          "RC_INSTABILITY_SLOT_MISSING"
+        ]
+      },
+      "rationale": "This is a synthetic verifier-control. UNKNOWN is not equivalent to ABSENT, so PASS remains unavailable. This is structural missingness handling, not evidence matching and not a claim that instability is clinically present.",
+      "source_basis": "docs/decision_log.md D-017; docs/memo_v1.4.md §8"
     }
   ]
 }
