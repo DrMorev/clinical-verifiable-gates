@@ -12,6 +12,7 @@ Status: approved test vectors for deterministic verifier implementation.
 | `contract_missing_fields_001` | Contract error | Required top-level `audit` field is omitted | `BLOCK` | `null` | `RC_CONTRACT_MISSING_FIELDS` | Required contract content is absent. | Current JSON Schema top-level required fields; memo §8 | APPROVED — PI/PM |
 | `contract_invalid_enum_001` | Contract error | C1 uses invalid enum value `MAYBE`; remaining structure minimizes unrelated defects | `BLOCK` | `null` | `RC_CONTRACT_SCHEMA_INVALID` | The structured output violates the current JSON Schema. | Current JSON Schema `GatingSlot` enum; memo §8 | APPROVED — PI/PM |
 | `hallucinated_critical_fill_001` | Silence Gate | C1 is filled with `YES`, but its quoted evidence is absent from the referenced turn and dialogue | `BLOCK` | `null` | `RC_HALLUCINATED_CRITICAL_FILL` | This synthetic Silence-set oracle contains no support for C1, yet the extractor assigns a non-`UNKNOWN` critical value; D-009 defines that known Silence violation as a hard failure without treating every exact-quote miss as proof of hallucination. | Decision log D-009; memo §7.3 and §8 | APPROVED — PI/PM |
+| `instability_unknown_001` | Instability missing | Exactly one instability slot is `UNKNOWN`; all other instability slots are grounded `ABSENT`; C1, C2, and C4 are grounded `NO` | `ABSTAIN` | `ASK_ONCE` | `RC_INSTABILITY_SLOT_MISSING` | This synthetic verifier-control keeps PASS unavailable because UNKNOWN is not ABSENT; it handles structural missingness without evidence matching or asserting clinical instability. | Decision log D-017; memo §8 | PROPOSED — AWAITING PI/PM APPROVAL |
 
 ## Boundaries
 
@@ -24,3 +25,4 @@ Status: approved test vectors for deterministic verifier implementation.
 - This fixture set does not resolve contradiction representation.
 - This fixture set does not modify the JSON Schema, clinical policy, or existing examples.
 - The contract-error fixtures are intentionally non-conforming in the single defect identified by each case; no JSON Schema validator is added in this phase.
+- `RC_INSTABILITY_SLOT_MISSING` handles a schema-valid UNKNOWN instability state; it does not classify the patient as unstable, perform evidence grounding, or bring hallucinated critical-fill adjudication into P3, which remains deferred to the evidence/Silence layer.
