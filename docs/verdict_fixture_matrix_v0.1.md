@@ -6,7 +6,7 @@ Status: approved test vectors for deterministic verifier implementation.
 |---|---|---|---|---|---|---|---|---|
 | `golden_001` | Golden | C1 and C2 are `YES`; C4 is `UNKNOWN` | `ABSTAIN` | `ESCALATE` | `RC_AD_RED_FLAG_PRESENT` | A critical `YES` triggers red-flag escalation before missing critical information is considered. | `docs/examples/ad_example_golden_001.md`; memo §6.3 and §8 | APPROVED — PI/PM |
 | `folk_001` | Folk | C1 is `YES`; C2 is `NO`; C4 is `UNKNOWN` | `ABSTAIN` | `ESCALATE` | `RC_AD_RED_FLAG_PRESENT` | Colloquial wording does not change the structured C1 red-flag result. | `docs/examples/ad_example_folk_001.md`; memo §6.3 and §8 | APPROVED — PI/PM |
-| `silence_001` | Silence | C1, C2, and C4 remain `UNKNOWN` | `ABSTAIN` | `ASK_ONCE` | `RC_INSTABILITY_SLOT_MISSING`, `RC_AD_CRITICAL_SLOT_MISSING` | Both instability and critical AD information remain UNKNOWN; D-017 requires both structural missingness codes in canonical order, and neither UNKNOWN state may be treated as negative. | `docs/examples/ad_example_silence_001.md`; Decision log D-017; memo §6.3 and §8 | APPROVED — PI/PM |
+| `silence_001` | Silence | All seven instability slots and C1, C2, and C4 remain `UNKNOWN` | `ABSTAIN` | `ASK_ONCE` | `RC_INSTABILITY_SLOT_MISSING`, `RC_AD_CRITICAL_SLOT_MISSING` | Both instability and critical AD information remain UNKNOWN; D-017 requires both structural missingness codes in canonical order, and neither UNKNOWN state may be treated as negative. | `docs/examples/ad_example_silence_001.md`; Decision log D-017; memo §6.3 and §8 | APPROVED — PI/PM |
 | `pass_all_critical_no_001` | PASS invariants | All instability triggers are `ABSENT`; C1, C2, and C4 are grounded `NO` values | `PASS` | `null` | `[]` | All current PASS invariants are satisfied; the verdict is not clinical clearance or a safety claim. | Memo §6.3 and PASS rule; current JSON Schema | APPROVED — PI/PM |
 | `instability_present_001` | Instability bypass | Exactly one instability trigger is `PRESENT`; remaining instability and critical slots are non-triggering | `ABSTAIN` | `ESCALATE` | `RC_INSTABILITY_BYPASS` | Instability bypass precedes ordinary gating logic. | Current JSON Schema instability definition; memo §6.1 and §8 | APPROVED — PI/PM |
 | `contract_missing_fields_001` | Contract error | Required top-level `audit` field is omitted | `BLOCK` | `null` | `RC_CONTRACT_MISSING_FIELDS` | Required contract content is absent. | Current JSON Schema top-level required fields; memo §8 | APPROVED — PI/PM |
@@ -17,7 +17,7 @@ Status: approved test vectors for deterministic verifier implementation.
 ## Boundaries
 
 - These fixtures are approved test vectors, not evidence of implemented functionality.
-- No production verifier exists yet.
+- P3 adds an executable deterministic structural adjudication kernel; evidence grounding, Silence-oracle execution, contradiction handling, and clinical deployment validation remain unimplemented.
 - PASS means only that no rule violation was detected under the applicable verifier specification. It does not mean clinical safety, clinical correctness, diagnostic clearance, or deployment readiness.
 - `pass_all_critical_no_001` is a synthetic verifier-control case, not a claim of realistic extractor or clinical-dialogue performance.
 - Evidence not found outside an oracle-labelled Silence violation is not automatically classified as hallucination by this fixture set.
