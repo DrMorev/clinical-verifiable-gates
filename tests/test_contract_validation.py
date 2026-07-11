@@ -24,6 +24,7 @@ STRUCTURALLY_VALID_IDS = (
     "silence_001",
     "pass_all_critical_no_001",
     "instability_present_001",
+    "instability_unknown_001",
     "hallucinated_critical_fill_001",
 )
 
