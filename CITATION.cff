@@ -1,0 +1,29 @@
+cff-version: "1.2.0"
+message: "If you use this software, please cite it using the metadata below."
+type: software
+title: "Clinical Verifiable Gates (CVG)"
+version: "0.1.0"
+authors:
+  - given-names: "Sergey"
+    family-names: "Morev"
+license: "MIT"
+repository-code: "https://github.com/DrMorev/clinical-verifiable-gates"
+url: "https://github.com/DrMorev/clinical-verifiable-gates"
+abstract: >-
+  Clinical Verifiable Gates (CVG) is an open-source reference
+  implementation of deterministic runtime qualification gates for bounded,
+  safety-sensitive clinical AI outputs. Version 0.1.0 provides
+  schema-validated PASS, BLOCK, and ABSTAIN adjudication, deterministic
+  evidence grounding and polarity-conflict containment, an evaluation-only
+  Silence oracle, approved machine-readable fixtures, a canonical reviewer
+  demo, regression tests, and Python 3.11 continuous integration. CVG is
+  research and engineering tooling only; it is not a medical device, a
+  clinically validated diagnostic system, a model extractor, or
+  deployment-ready clinical software.
+keywords:
+  - "clinical artificial intelligence"
+  - "deterministic verification"
+  - "runtime gating"
+  - "evidence grounding"
+  - "abstention"
+  - "research software"
