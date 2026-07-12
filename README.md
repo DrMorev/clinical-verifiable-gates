@@ -8,18 +8,72 @@ CVG is a deterministic runtime qualification layer and an open-source research a
 
 The repository currently contains:
 
-- a contract schema;
-- interface and policy scaffolding;
-- design documentation;
-- three non-executable Markdown examples.
+- executable structural contract adjudication;
+- deterministic evidence grounding and polarity-conflict containment;
+- high-level `verify_case` composition;
+- PASS / BLOCK / ABSTAIN verdicts with ordered reason codes;
+- evaluation-only Silence-oracle functionality;
+- nine approved machine-readable JSON fixtures;
+- an automated pytest suite;
+- a canonical reviewer demo;
+- GitHub Actions CI.
 
-It does not yet contain an executable deterministic verifier, executable PASS / BLOCK / ABSTAIN adjudication, implemented evidence matching, an executable Silence Gate or evaluation suite, tests, CI, or a canonical run command. Deterministic final adjudication remains an architectural requirement, not a claim about the current implementation.
+## Reviewer path
+
+Supported Python version: 3.11.
+
+Install development dependencies:
+
+```text
+python -m pip install -r requirements-dev.txt
+```
+
+Run the test suite:
+
+```text
+python -m pytest -q
+```
+
+Run the default reviewer demo (`golden_001`):
+
+```text
+python -m eval.demo
+```
+
+Explicit fixture examples:
+
+```text
+python -m eval.demo golden_001
+```
+
+```json
+{"decision":"ABSTAIN","reason_codes":["RC_AD_RED_FLAG_PRESENT"],"abstain_mode":"ESCALATE","schema_ref":"core/schemas/ad_extractor_contract_v0.1.schema.json","taxonomy_version":"v0.1"}
+```
+
+```text
+python -m eval.demo pass_all_critical_no_001
+```
+
+```json
+{"decision":"PASS","reason_codes":[],"abstain_mode":null,"schema_ref":"core/schemas/ad_extractor_contract_v0.1.schema.json","taxonomy_version":"v0.1"}
+```
+
+```text
+python -m eval.demo contract_missing_fields_001
+```
+
+```json
+{"decision":"BLOCK","reason_codes":["RC_CONTRACT_MISSING_FIELDS"],"abstain_mode":null,"schema_ref":"core/schemas/ad_extractor_contract_v0.1.schema.json","taxonomy_version":"v0.1"}
+```
 
 ## Boundaries (non-negotiable)
 
 - Research and engineering tooling only. No clinical deployment claims.
 - CVG is not a medical device or a replacement for clinical judgment.
-- PASS means only that no rule violation was detected under the applicable verifier specification. It does not mean clinically safe, clinically correct, diagnostic clearance, or deployment readiness.
+- PASS means only that no rule violation was detected under the applicable verifier specification. It does not mean clinically safe, clinically correct, diagnostically cleared, validated, or deployment-ready.
+- The Silence oracle is evaluation-only.
+- CVG makes no claim of clinical validation, diagnostic accuracy, comprehensive disease coverage, autonomous clinical use, deployment readiness, or regulatory status.
+- CVG does not implement model extraction.
 - No copyrighted guideline text shipped in this repo.
 
 ## Related Work
