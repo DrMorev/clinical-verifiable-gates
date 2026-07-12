@@ -421,3 +421,29 @@ Multiple ordinary negative statements are not automatically treated as double ne
 - Multilingual cues.
 - Models, embeddings, classifiers, or external NLP dependencies.
 - Schema, fixture, taxonomy, or verdict changes.
+
+## D-020 — Canonical reviewer demo and CI interface
+
+**Decision:**
+
+- The canonical reviewer demo entrypoint is `python -m eval.demo [fixture_id]`.
+- The optional `fixture_id` is resolved only against `eval/data/ad_verdict_fixtures_v0.1.json`.
+- Omitting `fixture_id` selects `golden_001`.
+- The demo calls the existing public `verify_case(payload, dialogue)`.
+- The demo prints exactly `result.verdict.to_json()` followed by one newline.
+- Successful execution emits no additional stdout text.
+- PASS, BLOCK, and ABSTAIN all use process exit code 0; the clinical/verifier decision is represented only in JSON.
+- An unknown fixture ID, invalid argument count, unreadable fixture source, or malformed fixture-set structure fails with non-zero exit status, emits no result JSON to stdout, and reports a concise error to stderr.
+- Error-message wording is not a stable public contract.
+- Output contains no timestamps, environment metadata, randomness, network-derived values, or mutable runtime state.
+- The demo does not serialize EvidenceVerificationResult and does not create a new verifier result schema.
+- The demo adds no clinical logic, verdict semantics, reason codes, schema behavior, extraction, or evidence policy.
+- The canonical development installation command is `python -m pip install -r requirements-dev.txt`.
+- The canonical test command is `python -m pytest -q`.
+- Minimal CI runs the canonical development installation and test commands on Python 3.11 for push and pull_request.
+- README may describe existing executable capabilities only as supported by the repository at the current canonical state.
+- Research-only and non-deployment boundaries remain unchanged.
+
+**Revisit trigger:**
+
+- If the CLI arguments, fixture source, stdout schema, exit-code policy, Python support policy, or canonical CI command changes.
