@@ -183,3 +183,241 @@ Tagline: “Deterministic verifier kernel for medical RLVR: extractor contract, 
 **Revisit trigger:**
 
 - If contradiction detection, semantic entailment, confidence-based thresholds, multilingual normalization, RC_EVIDENCE_WEAK, production oracle metadata, or a formal dialogue JSON Schema is introduced.
+
+## D-019 — Polarity containment for evidence grounding
+
+**Decision:**
+
+### Public boundary
+
+- P5 adds deterministic polarity-conflict containment to evidence grounding.
+- It does not implement general negation parsing, semantic entailment, extraction correction, or clinical-language understanding.
+- A match may be rejected when an approved deterministic guard establishes explicit polarity conflict or approved ambiguity.
+- Absence of a recognised pattern does not establish polarity and does not by itself reject otherwise valid evidence.
+
+### Value polarity
+
+- PRESENT, POSSIBLE, and YES map to positive polarity.
+- ABSENT and NO map to negative polarity.
+- UNKNOWN remains skipped.
+
+### Existing behavior preserved
+
+- Existing normalization remains unchanged.
+- Evidence remains restricted to its declared source_turn_id.
+- Thresholds remain 90 for instability and C1/C2/C4, and 85 for A1.
+- Confidence remains metadata only.
+- No explicit negation cue is required for ABSENT or NO.
+- Cue-free negative evidence such as breathe normally, alert and thinking clearly, and built up gradually remains eligible.
+- Existing nine fixture verdicts remain unchanged.
+
+### Pattern mechanics
+
+- Patterns are matched against normalized whitespace-delimited tokens.
+- Pattern matching uses whole-token contiguous sequences.
+- Character-substring matching inside another token is forbidden.
+- Each slot has approved positive-support and negative-support patterns.
+- Collect positive and negative pattern spans.
+- A shorter hit fully contained in a strictly longer opposite-polarity hit is suppressed.
+  - Example: alert is suppressed inside not alert.
+  - Example: maximal at the start is suppressed inside rather than being maximal at the start.
+- After suppression:
+  - positive hits only → positive;
+  - negative hits only → negative;
+  - both → ambiguous;
+  - neither → neutral.
+- Opposite polarity or ambiguous polarity is a conflict.
+- Same polarity or neutral is not a conflict.
+
+### Approved slot-pattern lexicon v0.1
+
+#### instability.syncope_or_collapse
+
+- positive:
+  fainted; fainting; passed out; passing out; collapsed; collapse
+- negative:
+  no fainting; no passing out; no collapse; not fainted; did not faint; didn t faint; did not pass out; didn t pass out; not collapsed; did not collapse; didn t collapse; not fainted or collapsed
+
+#### instability.severe_respiratory_distress
+
+- positive:
+  cannot breathe; can t breathe; could not breathe; couldn t breathe; gasping; struggling to breathe; severe shortness of breath
+- negative:
+  breathing is okay; breathing okay; breathe normally; breathing normally; speak in full sentences; speaking in full sentences; no shortness of breath; not short of breath
+
+#### instability.cyanosis_or_low_o2
+
+- positive:
+  lips are blue; blue lips; oxygen is low; oxygen reading is low; low oxygen; low o2; abnormal oxygen
+- negative:
+  lips are not blue; lips not blue; oxygen is normal; oxygen reading is normal; normal oxygen; normal o2
+
+#### instability.hypotension_or_shock_signs
+
+- positive:
+  blood pressure is low; low blood pressure; hypotensive; cold and clammy; cold or clammy; in shock
+- negative:
+  blood pressure is normal; normal blood pressure; not cold or clammy; not cold and clammy
+
+#### instability.altered_mental_status
+
+- positive:
+  confused; disoriented; not alert; hard to wake; unresponsive; not thinking clearly
+- negative:
+  alert; thinking clearly; oriented; not confused; not disoriented
+
+#### instability.acute_focal_neuro_deficit
+
+- positive:
+  new weakness; new numbness; speech trouble; slurred speech; facial droop; one sided weakness; one sided numbness
+- negative:
+  no new weakness numbness or speech trouble; no new weakness or numbness; no new weakness; no new numbness; no speech trouble; no weakness; no numbness; speech is normal
+
+#### instability.severe_pain_at_rest_with_diaphoresis_or_pallor
+
+- positive:
+  severe pain at rest; pain is severe at rest; sweaty; sweating; diaphoretic; pale; pallor
+- negative:
+  pain is not severe at rest; not severe at rest; not sweaty; not sweaty or pale; not sweating; not pale; no sweating; no pallor; no chest pain
+
+#### ad_gate.C1_onset_maximal_at_start
+
+- positive:
+  maximal at the start; maximal at start; maximal immediately; worst pain right away; max pain right away; instantly became the worst pain; sudden onset; started suddenly; out of nowhere
+- negative:
+  built up gradually; gradual onset; not maximal at the start; not maximal at start; rather than being maximal at the start; rather than maximal at the start; denies sudden onset; no sudden onset; not sudden onset
+
+#### ad_gate.C2_back_interscapular_radiation
+
+- positive:
+  upper back between the shoulder blades; between the shoulder blades; interscapular; spread to my back; spreads to my back; goes to my upper back; radiates to my back
+- negative:
+  does not spread to my back or between my shoulder blades; does not spread to the back or between the shoulder blades; does not spread to my back; doesn t spread to my back; no pain in my back; nothing in my back; not in my back; no back radiation
+
+#### ad_gate.C4_aortic_high_risk_history_any
+
+- positive:
+  aortic aneurysm; known aortic disease; marfan syndrome; ehlers danlos; bicuspid aortic valve; family history of aortic dissection; prior aortic surgery
+- negative:
+  none of the listed aortic high risk history; no aortic high risk history; no known aortic disease; no marfan syndrome; no family history of aortic dissection; no prior aortic surgery
+
+#### audit.A1_focal_neuro_deficit
+
+- reuses exactly the positive and negative pattern sets of:
+  instability.acute_focal_neuro_deficit
+
+No unlisted synonym or phrase is inferred.
+
+### Global negation signature
+
+After existing normalization, these are approved negation cues:
+
+Single-token cues:
+
+no; not; never; none; nothing; neither; nor; without; nah; deny; denies; denied; cannot
+
+Multi-token cues:
+
+can t; could not; couldn t; do not; don t; does not; doesn t; did not; didn t; is not; isn t; are not; aren t; was not; wasn t; were not; weren t; has not; hasn t; have not; haven t; had not; hadn t; will not; won t; would not; wouldn t; should not; shouldn t
+
+The negation signature is binary: cue present or cue absent.
+
+- Negation-signature equality is computed only between:
+  - the normalized quote; and
+  - the matched destination span.
+- The expanded five-token local context is not used for negation-signature equality.
+- The expanded context is used only for current-slot pattern classification and the bounded ambiguity guard.
+
+### Approved ambiguous phrases
+
+An approved ambiguous phrase fails closed when:
+
+- it occurs in the quote;
+- it overlaps the matched destination span; or
+- it overlaps a surviving current-slot pattern span in the expanded context.
+
+An unrelated ambiguous phrase elsewhere in the five-token expansion is ignored.
+
+Approved ambiguous phrases:
+
+not only; not uncommon; not impossible; not unlikely; not without; cannot rule out; can t rule out; could not rule out; couldn t rule out; no absence of; not no; denies no; denied no
+
+Multiple ordinary negative statements are not automatically treated as double negation.
+
+### Exact-match path
+
+- Locate the normalized quote as a contiguous whole-token sequence in the normalized anchored turn.
+- For each occurrence, select:
+  - the occurrence tokens;
+  - up to five tokens before;
+  - up to five tokens after.
+- The matched destination span is the exact whole-token quote occurrence.
+- Binary negation signatures are compared between the quote and that occurrence only.
+- Current-slot positive and negative patterns are evaluated in the expanded context.
+- Opposite or ambiguous current-slot polarity still fails closed.
+- If occurrences produce mixed compatible and conflicting contexts, fail closed.
+- For a quote shorter than 8 code points or containing fewer than 2 tokens, exact grounding additionally requires an approved same-polarity slot pattern in the quote or at least one candidate context.
+- Otherwise a conflict-free exact occurrence produces GROUNDED_EXACT, score 100.0.
+
+### Fuzzy-match path
+
+- Fuzzy remains disabled for quotes shorter than 8 code points or containing fewer than 2 tokens.
+- Use:
+  rapidfuzz.fuzz.partial_ratio_alignment(..., processor=None)
+- Use its score as the existing partial-ratio score and its destination span only to identify the local anchored-turn context.
+- Convert the destination character span deterministically to every overlapping normalized turn token.
+- Expand that span by up to five tokens before and five tokens after.
+- Binary negation signatures are compared between:
+  - the normalized quote; and
+  - the destination span returned by partial_ratio_alignment.
+- Do not compute destination signature from the expanded context.
+- Current-slot patterns and bounded ambiguity checks may use the expanded context as specified.
+- If the full anchored turn contains both surviving positive and negative patterns for the current slot, fuzzy matching fails closed.
+- If the guard passes, preserve the existing threshold rule:
+  score >= threshold.
+- No alternative alignment search or fallback scorer is introduced.
+
+### Regression invariant
+
+- Unrelated negation in a neighboring clause must not alter the signature of the matched destination span.
+- Subject to absence of a current-slot conflict, the following approved evidence remains eligible:
+  - Breathing is okay
+  - breathe normally
+  - alert and thinking clearly
+  - built up gradually
+- Every currently grounded non-UNKNOWN slot in the nine approved fixtures must remain grounded.
+- All nine fixture verdicts must remain unchanged.
+- In particular, pass_all_critical_no_001 must remain runtime PASS.
+
+### Failure behavior
+
+- Explicit conflict, ambiguity, or negation-signature mismatch produces:
+  - EvidenceSlotStatus.NOT_FOUND;
+  - score=None.
+- Use existing RC_EVIDENCE_NOT_FOUND.
+- Do not add a new evidence status.
+- Do not add a new verifier reason code.
+- A rejected match does not establish hallucination.
+
+### Precedence
+
+- Contract validation remains first.
+- Dialogue validation remains second.
+- Structural ESCALATE remains unchanged when polarity grounding fails.
+- Non-escalation runtime failures retain existing ASK_ONCE behavior and reason-code ordering.
+- Audit-only polarity failures remain report-only.
+- Trusted Silence-oracle BLOCK retains its existing evaluation precedence.
+- Polarity conflict alone never emits RC_HALLUCINATED_CRITICAL_FILL.
+
+### Explicit exclusions
+
+- General negation parsing.
+- Semantic entailment.
+- Extractor correction.
+- Clause or dependency parsing.
+- Coreference.
+- Historical or hypothetical interpretation.
+- Unlisted synonym expansion.
+- Multilingual cues.
+- Models, embeddings, classifiers, or external NLP dependencies.
+- Schema, fixture, taxonomy, or verdict changes.
