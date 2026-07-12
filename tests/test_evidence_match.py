@@ -52,6 +52,30 @@ def find_slot(
     )
 
 
+def evaluate_slot(
+    approved_cases: dict[str, dict[str, Any]],
+    section: str,
+    slot: str,
+    value: str,
+    quote: str,
+    anchored_text: str,
+) -> EvidenceSlotResult:
+    payload = payload_for(approved_cases)
+    dialogue = dialogue_for(approved_cases)
+    payload[section][slot]["value"] = value
+    payload[section][slot]["evidence"]["quote_text"] = quote
+    source_turn_id = payload[section][slot]["evidence"]["source_turn_id"]
+    next(turn for turn in dialogue if turn["turn_id"] == source_turn_id)[
+        "text"
+    ] = anchored_text
+    return find_slot(verify_evidence(payload, dialogue), section, slot)
+
+
+def assert_not_found(result: EvidenceSlotResult) -> None:
+    assert result.status is EvidenceSlotStatus.NOT_FOUND
+    assert result.score is None
+
+
 def issue_codes(result: EvidenceVerificationResult) -> tuple[str, ...]:
     return tuple(issue.code for issue in result.dialogue_issues)
 
@@ -355,6 +379,328 @@ def test_real_rapidfuzz_integration(
     matched = find_slot(result, "ad_gate", slot)
     assert matched.status is EvidenceSlotStatus.GROUNDED_FUZZY
     assert matched.score is not None and matched.score >= 90
+
+
+@pytest.mark.parametrize(
+    ("value", "quote"),
+    (
+        ("PRESENT", "no fainting"),
+        ("ABSENT", "fainted"),
+    ),
+)
+def test_explicit_opposite_polarity_is_rejected(
+    approved_cases: dict[str, dict[str, Any]], value: str, quote: str
+) -> None:
+    matched = evaluate_slot(
+        approved_cases,
+        "instability",
+        INSTABILITY_SLOTS[0],
+        value,
+        quote,
+        quote,
+    )
+
+    assert_not_found(matched)
+
+
+@pytest.mark.parametrize(
+    ("quote", "anchored_text"),
+    (("no", "now"), ("now", "no")),
+)
+def test_exact_no_and_now_do_not_match_inside_tokens(
+    approved_cases: dict[str, dict[str, Any]], quote: str, anchored_text: str
+) -> None:
+    matched = evaluate_slot(
+        approved_cases,
+        "instability",
+        INSTABILITY_SLOTS[0],
+        "ABSENT",
+        quote,
+        anchored_text,
+    )
+
+    assert_not_found(matched)
+
+
+@pytest.mark.parametrize(
+    ("quote", "anchored_text", "value"),
+    (
+        ("no faintng today", "now fainting today", "ABSENT"),
+        ("now faintng today", "no fainting today", "PRESENT"),
+    ),
+)
+def test_fuzzy_no_and_now_fail_closed_in_both_directions(
+    approved_cases: dict[str, dict[str, Any]],
+    quote: str,
+    anchored_text: str,
+    value: str,
+) -> None:
+    matched = evaluate_slot(
+        approved_cases,
+        "instability",
+        INSTABILITY_SLOTS[0],
+        value,
+        quote,
+        anchored_text,
+    )
+
+    assert_not_found(matched)
+
+
+def test_fuzzy_typo_preserving_negation_cue_remains_eligible(
+    approved_cases: dict[str, dict[str, Any]],
+) -> None:
+    matched = evaluate_slot(
+        approved_cases,
+        "instability",
+        INSTABILITY_SLOTS[0],
+        "ABSENT",
+        "no faintng today",
+        "no fainting today",
+    )
+
+    assert matched.status is EvidenceSlotStatus.GROUNDED_FUZZY
+    assert matched.score is not None and matched.score >= 90
+
+
+@pytest.mark.parametrize(
+    ("section", "slot", "value", "phrase"),
+    (
+        ("instability", INSTABILITY_SLOTS[4], "PRESENT", "not alert"),
+        (
+            "ad_gate",
+            CRITICAL_AD_SLOTS[0],
+            "NO",
+            "rather than being maximal at the start",
+        ),
+        (
+            "instability",
+            INSTABILITY_SLOTS[6],
+            "ABSENT",
+            "not sweaty or pale",
+        ),
+    ),
+)
+def test_contained_opposite_pattern_is_suppressed(
+    approved_cases: dict[str, dict[str, Any]],
+    section: str,
+    slot: str,
+    value: str,
+    phrase: str,
+) -> None:
+    matched = evaluate_slot(
+        approved_cases, section, slot, value, phrase, phrase
+    )
+
+    assert matched.status is EvidenceSlotStatus.GROUNDED_EXACT
+    assert matched.score == 100.0
+
+
+def test_mixed_compatible_and_conflicting_exact_occurrences_fail_closed(
+    approved_cases: dict[str, dict[str, Any]],
+) -> None:
+    matched = evaluate_slot(
+        approved_cases,
+        "instability",
+        INSTABILITY_SLOTS[4],
+        "ABSENT",
+        "alert",
+        "alert today but later not alert",
+    )
+
+    assert_not_found(matched)
+
+
+def test_approved_ambiguity_in_quote_fails_closed(
+    approved_cases: dict[str, dict[str, Any]],
+) -> None:
+    phrase = "cannot rule out severe shortness of breath"
+    matched = evaluate_slot(
+        approved_cases,
+        "instability",
+        INSTABILITY_SLOTS[1],
+        "PRESENT",
+        phrase,
+        phrase,
+    )
+
+    assert_not_found(matched)
+
+
+def test_approved_ambiguity_overlapping_fuzzy_destination_fails_closed(
+    approved_cases: dict[str, dict[str, Any]], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    anchored_text = "cannot rule out severe shortness of breath"
+
+    def fixed_alignment(*args: object, **kwargs: object) -> SimpleNamespace:
+        assert kwargs == {"processor": None}
+        return SimpleNamespace(
+            score=95.0,
+            dest_start=0,
+            dest_end=len(anchored_text),
+        )
+
+    monkeypatch.setattr(
+        "core.evidence_match.partial_ratio_alignment", fixed_alignment
+    )
+    matched = evaluate_slot(
+        approved_cases,
+        "instability",
+        INSTABILITY_SLOTS[1],
+        "PRESENT",
+        "rule out severe breath",
+        anchored_text,
+    )
+
+    assert_not_found(matched)
+
+
+def test_ambiguity_overlapping_current_slot_pattern_fails_closed(
+    approved_cases: dict[str, dict[str, Any]],
+) -> None:
+    matched = evaluate_slot(
+        approved_cases,
+        "instability",
+        INSTABILITY_SLOTS[0],
+        "PRESENT",
+        "fainting",
+        "this is not no fainting today",
+    )
+
+    assert_not_found(matched)
+
+
+def test_unrelated_ambiguity_in_context_is_ignored(
+    approved_cases: dict[str, dict[str, Any]],
+) -> None:
+    matched = evaluate_slot(
+        approved_cases,
+        "instability",
+        INSTABILITY_SLOTS[1],
+        "ABSENT",
+        "breathe normally",
+        "not only today I can breathe normally",
+    )
+
+    assert matched.status is EvidenceSlotStatus.GROUNDED_EXACT
+    assert matched.score == 100.0
+
+
+def test_neighboring_clause_negation_does_not_contaminate_destination(
+    approved_cases: dict[str, dict[str, Any]],
+) -> None:
+    matched = evaluate_slot(
+        approved_cases,
+        "instability",
+        INSTABILITY_SLOTS[1],
+        "ABSENT",
+        "breathe normally",
+        "I have not fainted or collapsed I can breathe normally",
+    )
+
+    assert matched.status is EvidenceSlotStatus.GROUNDED_EXACT
+    assert matched.score == 100.0
+
+
+def test_short_exact_quote_with_same_polarity_pattern_is_accepted(
+    approved_cases: dict[str, dict[str, Any]],
+) -> None:
+    matched = evaluate_slot(
+        approved_cases,
+        "instability",
+        INSTABILITY_SLOTS[4],
+        "ABSENT",
+        "alert",
+        "alert",
+    )
+
+    assert matched.status is EvidenceSlotStatus.GROUNDED_EXACT
+    assert matched.score == 100.0
+
+
+def test_whole_token_boundary_rejects_pattern_inside_larger_token(
+    approved_cases: dict[str, dict[str, Any]],
+) -> None:
+    matched = evaluate_slot(
+        approved_cases,
+        "instability",
+        INSTABILITY_SLOTS[0],
+        "PRESENT",
+        "fainted",
+        "unfainted",
+    )
+
+    assert_not_found(matched)
+
+
+def test_fuzzy_destination_span_converts_overlapping_token_boundaries(
+    approved_cases: dict[str, dict[str, Any]], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    anchored_text = "prefix built up gradually today suffix"
+    destination_text = "built up gradually today"
+    destination_start = anchored_text.index(destination_text)
+
+    def fixed_alignment(*args: object, **kwargs: object) -> SimpleNamespace:
+        assert kwargs == {"processor": None}
+        return SimpleNamespace(
+            score=95.0,
+            dest_start=destination_start + 1,
+            dest_end=destination_start + len(destination_text) - 1,
+        )
+
+    monkeypatch.setattr(
+        "core.evidence_match.partial_ratio_alignment", fixed_alignment
+    )
+    matched = evaluate_slot(
+        approved_cases,
+        "ad_gate",
+        CRITICAL_AD_SLOTS[0],
+        "NO",
+        "gradual onst today",
+        anchored_text,
+    )
+
+    assert matched.status is EvidenceSlotStatus.GROUNDED_FUZZY
+    assert matched.score == 95.0
+
+
+def test_full_turn_mixed_slot_polarity_rejects_fuzzy_grounding(
+    approved_cases: dict[str, dict[str, Any]],
+) -> None:
+    matched = evaluate_slot(
+        approved_cases,
+        "ad_gate",
+        CRITICAL_AD_SLOTS[0],
+        "NO",
+        "built up gradualy",
+        "built up gradually but another report says sudden onset",
+    )
+
+    assert_not_found(matched)
+
+
+def test_polarity_conflict_is_deterministic_and_does_not_mutate_inputs(
+    approved_cases: dict[str, dict[str, Any]],
+) -> None:
+    payload = payload_for(approved_cases)
+    dialogue = dialogue_for(approved_cases)
+    slot = INSTABILITY_SLOTS[0]
+    payload["instability"][slot]["value"] = "PRESENT"
+    payload["instability"][slot]["evidence"]["quote_text"] = "no fainting"
+    source_turn_id = payload["instability"][slot]["evidence"]["source_turn_id"]
+    next(turn for turn in dialogue if turn["turn_id"] == source_turn_id)[
+        "text"
+    ] = "no fainting"
+    before_payload = copy.deepcopy(payload)
+    before_dialogue = copy.deepcopy(dialogue)
+
+    first = verify_evidence(payload, dialogue)
+    second = verify_evidence(payload, dialogue)
+
+    assert first == second
+    assert_not_found(find_slot(first, "instability", slot))
+    assert payload == before_payload
+    assert dialogue == before_dialogue
 
 
 def test_confidence_does_not_change_result(
