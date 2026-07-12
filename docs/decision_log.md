@@ -278,7 +278,7 @@ Tagline: “Deterministic verifier kernel for medical RLVR: extractor contract, 
 - positive:
   severe pain at rest; pain is severe at rest; sweaty; sweating; diaphoretic; pale; pallor
 - negative:
-  pain is not severe at rest; not severe at rest; not sweaty; not sweating; not pale; no sweating; no pallor; no chest pain
+  pain is not severe at rest; not severe at rest; not sweaty; not sweaty or pale; not sweating; not pale; no sweating; no pallor; no chest pain
 
 #### ad_gate.C1_onset_maximal_at_start
 

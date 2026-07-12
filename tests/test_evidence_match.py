@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import json
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Callable
 
 import pytest
@@ -272,7 +273,7 @@ def test_empty_normalized_quote_is_not_grounded(
     assert matched.score is None
 
 
-def test_short_exact_quote_is_permitted(
+def test_short_exact_quote_without_approved_same_polarity_pattern_is_rejected(
     approved_cases: dict[str, dict[str, Any]],
 ) -> None:
     payload = payload_for(approved_cases)
@@ -281,7 +282,9 @@ def test_short_exact_quote_is_permitted(
 
     result = verify_evidence(payload, dialogue_for(approved_cases))
 
-    assert find_slot(result, "instability", slot).status is EvidenceSlotStatus.GROUNDED_EXACT
+    matched = find_slot(result, "instability", slot)
+    assert matched.status is EvidenceSlotStatus.NOT_FOUND
+    assert matched.score is None
 
 
 @pytest.mark.parametrize("quote", ("pain no", "abcdefgh"))
@@ -326,11 +329,11 @@ def test_fuzzy_threshold_boundaries(
         "text"
     ] = "charlie delta"
 
-    def fixed_score(*args: object, **kwargs: object) -> float:
+    def fixed_score(*args: object, **kwargs: object) -> SimpleNamespace:
         assert kwargs == {"processor": None}
-        return score
+        return SimpleNamespace(score=score, dest_start=0, dest_end=len("charlie delta"))
 
-    monkeypatch.setattr("core.evidence_match.partial_ratio", fixed_score)
+    monkeypatch.setattr("core.evidence_match.partial_ratio_alignment", fixed_score)
     result = verify_evidence(payload, dialogue)
 
     matched = find_slot(result, section, slot)
