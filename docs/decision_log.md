@@ -112,3 +112,74 @@ Tagline: “Deterministic verifier kernel for medical RLVR: extractor contract, 
 - Deterministic total adjudication requires an explicit non-PASS result for this state.
 
 **Revisit trigger:** If the instability contract, clarification policy, or slot taxonomy changes.
+
+## D-018 — Evidence grounding and Silence-oracle boundary
+
+**Decision:**
+
+- adjudicate_contract(payload) remains the structural-only primitive.
+- Runtime evidence verification is exposed through verify_evidence(payload, dialogue) -> EvidenceVerificationResult.
+- High-level runtime verification is exposed through verify_case(payload, dialogue) -> CaseVerificationResult.
+- CaseVerificationResult contains an immutable verdict: VerifierResult and immutable evidence: EvidenceVerificationResult.
+- The existing core/evidence_match.py placeholder is the canonical production module to be made executable; no parallel core/evidence.py module is introduced.
+- Contract validation always runs first and preserves existing contract BLOCK results unchanged.
+- Malformed dialogue input produces BLOCK, abstain_mode=None, RC_DIALOGUE_INVALID.
+- Dialogue is malformed if:
+  - the root is not a non-empty list;
+  - a turn is not an object;
+  - turn_id is missing, Boolean, or not an integer;
+  - a turn_id is duplicated;
+  - text is missing or not a string;
+  - any dialogue turn exceeds meta.last_turn_id;
+  - the maximum dialogue turn_id does not equal meta.last_turn_id.
+- Dialogue turn IDs need not be contiguous, and input list order does not affect verification.
+- A valid evidence anchor whose source_turn_id does not exist in the bounded dialogue, including a value above meta.last_turn_id, is an ordinary evidence-grounding failure rather than a dialogue-structure failure.
+- UNKNOWN slots are not quote-matched and retain evidence: null.
+- All non-UNKNOWN instability slots, critical AD slots C1/C2/C4, and audit slot A1 are deterministically checked.
+- Instability and C1/C2/C4 evidence use threshold 90.
+- Audit A1 evidence uses threshold 85.
+- Normalization applies Unicode-aware casefold, replaces Unicode punctuation-category characters with spaces, collapses whitespace, and strips leading/trailing whitespace.
+- NFC and NFKC normalization are not added in v0.1.
+- Matching uses normalized anchored-turn exact substring first, then rapidfuzz.fuzz.partial_ratio(..., processor=None).
+- A fuzzy score matches when score >= threshold.
+- Exact matching remains permitted for short quotes.
+- Fuzzy matching is disabled unless the normalized quote contains at least 8 code points and at least 2 non-empty whitespace-delimited tokens.
+- Empty normalized quotes are not grounded.
+- Matching is restricted to the declared source_turn_id; text in another turn does not ground the evidence.
+- Confidence remains metadata and does not alter matching or thresholds in v0.1.
+- rapidfuzz>=3.14.5,<3.15 is the approved runtime dependency.
+- No silent fallback scorer is permitted.
+- Ordinary inability to ground evidence produces RC_EVIDENCE_NOT_FOUND; failure to match a quote does not by itself establish hallucination.
+- Instability PRESENT/POSSIBLE and critical AD YES retain structural ESCALATE precedence even when their evidence is not grounded.
+- In an escalation result, evidence failures remain visible in the evidence report but do not replace or supplement the structural verdict reason code.
+- If no escalation applies, ASK_ONCE reason codes are ordered:
+  1. RC_INSTABILITY_SLOT_MISSING
+  2. RC_AD_CRITICAL_SLOT_MISSING
+  3. one deduplicated RC_EVIDENCE_NOT_FOUND
+- Detailed evidence issues remain individually represented in canonical slot order even when the verdict contains one deduplicated evidence reason code.
+- Audit evidence failures are recorded but do not alter the runtime verdict in P4.
+- Runtime PASS requires structural PASS plus grounded evidence for every non-UNKNOWN instability and C1/C2/C4 slot.
+- RC_EVIDENCE_WEAK remains deferred in P4.
+- Silence-oracle adjudication is evaluation-only and accepts explicit immutable trusted context containing unsupported critical AD slots.
+- Silence-oracle code must not inspect fixture IDs, fixture categories, filenames, rationale text, expected results, or expected reason codes.
+- A trusted oracle-labelled critical slot produces BLOCK / RC_HALLUCINATED_CRITICAL_FILL only when that slot is non-UNKNOWN in the extractor output.
+- The trusted oracle label, not an exact or fuzzy mismatch, authorizes hallucinated-fill classification.
+- Evaluation precedence is:
+  1. contract failure;
+  2. malformed dialogue;
+  3. trusted Silence-oracle violation;
+  4. ordinary runtime verification.
+- For P4, trusted oracle context is supplied explicitly by evaluation tests; no new oracle-label artifact or fixture field is introduced.
+
+**Why / trade-off:**
+
+- Structural escalation must not be downgraded because an extractor supplied weak or fabricated evidence for a potentially dangerous state.
+- Runtime grounding failure and trusted evaluation-only hallucination classification are different claims and must remain mechanically separated.
+- Returning both the verdict and ordered evidence report preserves auditability without contaminating the minimal verdict taxonomy.
+- A single dialogue-invalid reason code provides deterministic fail-closed handling without broad taxonomy expansion.
+- Explicit normalization, scorer version, thresholds, and short-quote limits reduce hidden preprocessing and fuzzy-match drift.
+- Audit grounding remains observable while preserving the approved P3 rule that audit slots do not control PASS.
+
+**Revisit trigger:**
+
+- If contradiction detection, semantic entailment, confidence-based thresholds, multilingual normalization, RC_EVIDENCE_WEAK, production oracle metadata, or a formal dialogue JSON Schema is introduced.
