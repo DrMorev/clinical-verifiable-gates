@@ -3,12 +3,13 @@ message: "If you use this software, please cite it using the metadata below."
 type: software
 title: "Clinical Verifiable Gates (CVG)"
 version: "0.1.0"
+doi: "10.5281/zenodo.21328660"
 authors:
   - given-names: "Sergey"
     family-names: "Morev"
 license: "MIT"
-repository-code: "https://github.com/DrMorev/clinical-verifiable-gates"
-url: "https://github.com/DrMorev/clinical-verifiable-gates"
+repository-code: "https://github.com/sergey-morev/clinical-verifiable-gates"
+url: "https://github.com/sergey-morev/clinical-verifiable-gates"
 abstract: >-
   Clinical Verifiable Gates (CVG) is an open-source reference
   implementation of deterministic runtime qualification gates for bounded,
